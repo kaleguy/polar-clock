@@ -14,8 +14,77 @@ const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frida
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
 
+const timeDisplay = document.getElementById('time-display');
+
+const monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 const TAU = Math.PI * 2;
 const START_ANGLE = -Math.PI / 2; // 12 o'clock
+let reversed = false;
+
+// Track which ring indices are disabled (greyed out, ring hidden)
+const disabled = new Set();
+
+// Display line config: maps display order to ring index
+// Order: Month, Date, Day, HH:MM:SS
+const displayLines = [
+  { ringIndex: 3, format: (now) => dayNames[now.getDay()] },
+];
+
+const timeParts = [
+  { ringIndex: 2, format: (now) => String(now.getHours()).padStart(2, '0') },
+  { ringIndex: 1, format: (now) => String(now.getMinutes()).padStart(2, '0') },
+  { ringIndex: 0, format: (now) => String(now.getSeconds()).padStart(2, '0') },
+];
+
+document.getElementById('toggle').addEventListener('click', () => {
+  reversed = !reversed;
+});
+
+function makeClickable(ringIndex) {
+  const el = document.createElement('span');
+  el.style.cursor = 'pointer';
+  el.addEventListener('click', () => {
+    if (disabled.has(ringIndex)) disabled.delete(ringIndex);
+    else disabled.add(ringIndex);
+  });
+  return el;
+}
+
+// Build month/date line: "February 28" with each part clickable
+const monthDateRow = document.createElement('div');
+const monthSpan = makeClickable(5);
+monthDateRow.appendChild(monthSpan);
+const monthDateSpace = document.createElement('span');
+monthDateSpace.textContent = ' ';
+monthDateRow.appendChild(monthDateSpace);
+const dateSpan = makeClickable(4);
+monthDateRow.appendChild(dateSpan);
+timeDisplay.appendChild(monthDateRow);
+
+// Build day line
+const displayDivs = displayLines.map(dl => {
+  const div = makeClickable(dl.ringIndex);
+  div.style.display = 'block';
+  timeDisplay.appendChild(div);
+  return div;
+});
+
+// Build time line: HH:MM:SS as one row with individually clickable parts
+const timeRow = document.createElement('div');
+const timeSpans = timeParts.map((tp, idx) => {
+  if (idx > 0) {
+    const colon = document.createElement('span');
+    colon.textContent = ':';
+    colon.style.color = '#555';
+    timeRow.appendChild(colon);
+  }
+  const span = makeClickable(tp.ringIndex);
+  timeRow.appendChild(span);
+  return span;
+});
+timeDisplay.appendChild(timeRow);
 
 function resize() {
   canvas.width = window.innerWidth * devicePixelRatio;
@@ -59,13 +128,17 @@ function draw() {
   ctx.clearRect(0, 0, w, h);
 
   const maxRadius = Math.min(cx, cy) * 0.85;
-  const ringWidth = Math.min(maxRadius / (rings.length + 1.5), 28 * scale);
+  const activeOrder = (reversed ? [...rings.keys()].reverse() : [...rings.keys()])
+    .filter(i => !disabled.has(i));
+  const activeCount = activeOrder.length;
+  const ringWidth = Math.min(maxRadius / (Math.max(activeCount, 1) + 1.5), 28 * scale);
   const gap = ringWidth * 0.35;
 
-  for (let i = 0; i < rings.length; i++) {
+  for (let pos = 0; pos < activeCount; pos++) {
+    const i = activeOrder[pos];
     const ring = rings[i];
     const val = values[i];
-    const radius = maxRadius - i * (ringWidth + gap);
+    const radius = maxRadius - pos * (ringWidth + gap);
     const endAngle = START_ANGLE + val.fraction * TAU;
 
     // Background track
@@ -99,6 +172,24 @@ function draw() {
     const text = `${ring.label}: ${val.display}`;
     ctx.fillText(text, lx, ly);
   }
+
+  // Update center time display
+  monthSpan.textContent = monthNames[now.getMonth()];
+  monthSpan.style.color = disabled.has(5) ? '#555' : rings[5].color;
+  dateSpan.textContent = now.getDate();
+  dateSpan.style.color = disabled.has(4) ? '#555' : rings[4].color;
+  displayLines.forEach((dl, idx) => {
+    const div = displayDivs[idx];
+    const off = disabled.has(dl.ringIndex);
+    div.style.color = off ? '#555' : rings[dl.ringIndex].color;
+    div.textContent = dl.format(now);
+  });
+  timeParts.forEach((tp, idx) => {
+    const span = timeSpans[idx];
+    const off = disabled.has(tp.ringIndex);
+    span.style.color = off ? '#555' : rings[tp.ringIndex].color;
+    span.textContent = tp.format(now);
+  });
 
   requestAnimationFrame(draw);
 }
