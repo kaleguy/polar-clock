@@ -16,9 +16,6 @@ const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
 
 const timeDisplay = document.getElementById('time-display');
 
-const monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 const TAU = Math.PI * 2;
 const START_ANGLE = -Math.PI / 2; // 12 o'clock
 let reversed = false;
