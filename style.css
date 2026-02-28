@@ -24,14 +24,15 @@ canvas {
 
 #time-display {
   position: fixed;
-  left: 50%;
+  right: 32px;
   top: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateY(-50%);
   font-family: -apple-system, system-ui, sans-serif;
   font-size: 20px;
   font-weight: 600;
   line-height: 1.8;
-  text-align: center;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
   z-index: 10;
 }
 
@@ -39,26 +40,4 @@ canvas {
   cursor: pointer;
   transition: color 0.2s;
   user-select: none;
-}
-
-#toggle {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: #ffffff15;
-  border: 1px solid #ffffff25;
-  color: #fff;
-  font-size: 20px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#toggle:hover {
-  background: #ffffff30;
 }

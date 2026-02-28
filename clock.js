@@ -5,6 +5,7 @@ const rings = [
   { label: 'Seconds',  color: '#ff6b6b', max: 60 },
   { label: 'Minutes',  color: '#feca57', max: 60 },
   { label: 'Hours',    color: '#48dbfb', max: 24 },
+  { label: '12 Hour',  color: '#f368e0', max: 12 },
   { label: 'Day',      color: '#ff9ff3', max: 7  },
   { label: 'Date',     color: '#54a0ff', max: 31 },
   { label: 'Month',    color: '#5f27cd', max: 12 },
@@ -18,15 +19,13 @@ const timeDisplay = document.getElementById('time-display');
 
 const TAU = Math.PI * 2;
 const START_ANGLE = -Math.PI / 2; // 12 o'clock
-let reversed = false;
-
 // Track which ring indices are disabled (greyed out, ring hidden)
 const disabled = new Set();
 
 // Display line config: maps display order to ring index
 // Order: Month, Date, Day, HH:MM:SS
 const displayLines = [
-  { ringIndex: 3, format: (now) => dayNames[now.getDay()] },
+  { ringIndex: 4, format: (now) => dayNames[now.getDay()] },
 ];
 
 const timeParts = [
@@ -34,10 +33,6 @@ const timeParts = [
   { ringIndex: 1, format: (now) => String(now.getMinutes()).padStart(2, '0') },
   { ringIndex: 0, format: (now) => String(now.getSeconds()).padStart(2, '0') },
 ];
-
-document.getElementById('toggle').addEventListener('click', () => {
-  reversed = !reversed;
-});
 
 function makeClickable(ringIndex) {
   const el = document.createElement('span');
@@ -51,12 +46,12 @@ function makeClickable(ringIndex) {
 
 // Build month/date line: "February 28" with each part clickable
 const monthDateRow = document.createElement('div');
-const monthSpan = makeClickable(5);
+const monthSpan = makeClickable(6);
 monthDateRow.appendChild(monthSpan);
 const monthDateSpace = document.createElement('span');
 monthDateSpace.textContent = ' ';
 monthDateRow.appendChild(monthDateSpace);
-const dateSpan = makeClickable(4);
+const dateSpan = makeClickable(5);
 monthDateRow.appendChild(dateSpan);
 timeDisplay.appendChild(monthDateRow);
 
@@ -83,6 +78,28 @@ const timeSpans = timeParts.map((tp, idx) => {
 });
 timeDisplay.appendChild(timeRow);
 
+// Build 12-hour time line: H:MM:SS AM/PM with three colors
+const time12Row = document.createElement('div');
+const time12Parts = [
+  { ringIndex: 3, format: (now) => String(now.getHours() % 12 || 12) },
+  { ringIndex: 1, format: (now) => String(now.getMinutes()).padStart(2, '0') },
+  { ringIndex: 0, format: (now) => String(now.getSeconds()).padStart(2, '0') },
+];
+const time12Spans = time12Parts.map((tp, idx) => {
+  if (idx > 0) {
+    const colon = document.createElement('span');
+    colon.textContent = ':';
+    colon.style.color = '#555';
+    time12Row.appendChild(colon);
+  }
+  const span = makeClickable(tp.ringIndex);
+  time12Row.appendChild(span);
+  return span;
+});
+const ampmSpan = makeClickable(3);
+time12Row.appendChild(ampmSpan);
+timeDisplay.appendChild(time12Row);
+
 function resize() {
   canvas.width = window.innerWidth * devicePixelRatio;
   canvas.height = window.innerHeight * devicePixelRatio;
@@ -106,6 +123,7 @@ function getValues(now) {
     { fraction: sec / 60, display: Math.floor(sec) },
     { fraction: min / 60, display: Math.floor(min) },
     { fraction: hr / 24,  display: Math.floor(hr) },
+    { fraction: (hr % 12) / 12, display: Math.floor(hr % 12) || 12 },
     { fraction: dayOfWeek / 7, display: dayNames[now.getDay()] },
     { fraction: dayOfMonth / daysInMonth(now), display: now.getDate() },
     { fraction: month / 12, display: monthNames[now.getMonth()] },
@@ -125,7 +143,7 @@ function draw() {
   ctx.clearRect(0, 0, w, h);
 
   const maxRadius = Math.min(cx, cy) * 0.85;
-  const activeOrder = (reversed ? [...rings.keys()].reverse() : [...rings.keys()])
+  const activeOrder = [...rings.keys()].reverse()
     .filter(i => !disabled.has(i));
   const activeCount = activeOrder.length;
   const ringWidth = Math.min(maxRadius / (Math.max(activeCount, 1) + 1.5), 28 * scale);
@@ -172,9 +190,20 @@ function draw() {
 
   // Update center time display
   monthSpan.textContent = monthNames[now.getMonth()];
-  monthSpan.style.color = disabled.has(5) ? '#555' : rings[5].color;
+  monthSpan.style.color = disabled.has(6) ? '#555' : rings[6].color;
   dateSpan.textContent = now.getDate();
-  dateSpan.style.color = disabled.has(4) ? '#555' : rings[4].color;
+  dateSpan.style.color = disabled.has(5) ? '#555' : rings[5].color;
+
+  // Update 12-hour display
+  time12Parts.forEach((tp, idx) => {
+    const span = time12Spans[idx];
+    const off = disabled.has(tp.ringIndex);
+    span.style.color = off ? '#555' : rings[tp.ringIndex].color;
+    span.textContent = tp.format(now);
+  });
+  const ampm = now.getHours() < 12 ? ' AM' : ' PM';
+  ampmSpan.textContent = ampm;
+  ampmSpan.style.color = disabled.has(3) ? '#555' : rings[3].color;
   displayLines.forEach((dl, idx) => {
     const div = displayDivs[idx];
     const off = disabled.has(dl.ringIndex);
