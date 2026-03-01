@@ -1,0 +1,43 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0a0a0a;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+}
+
+canvas {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+#time-display {
+  position: fixed;
+  right: 32px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: -apple-system, system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.8;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  z-index: 10;
+}
+
+#time-display span, #time-display div {
+  cursor: pointer;
+  transition: color 0.2s;
+  user-select: none;
+}
