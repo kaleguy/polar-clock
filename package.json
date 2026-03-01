@@ -1,0 +1,9 @@
+{
+  "name": "polar-clock",
+  "version": "1.0.0",
+  "private": true,
+  "homepage": "https://kaleguy.github.io/polar-clock",
+  "scripts": {
+    "deploy": "npx gh-pages -d ."
+  }
+}
